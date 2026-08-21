@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database import get_db
+from app.models.transaction import Transaction
 from app.models.vehicle import Vehicle
 from app.models.user import User
 from app.schemas.vehicle import VehicleCreate, VehicleUpdate, VehicleResponse, RestockRequest
@@ -9,11 +10,13 @@ from app.core.dependencies import get_current_user, require_admin
 
 router = APIRouter(prefix="/api/vehicles", tags=["Vehicles"])
 
+# ... (I will only replace the imports and purchase_vehicle)
+
 @router.post("", response_model=VehicleResponse, status_code=status.HTTP_201_CREATED)
 def create_vehicle(
     vehicle_in: VehicleCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    admin_user: User = Depends(require_admin)
 ):
     vehicle = Vehicle(**vehicle_in.model_dump())
     db.add(vehicle)
@@ -56,7 +59,7 @@ def update_vehicle(
     vehicle_id: int,
     vehicle_in: VehicleUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    admin_user: User = Depends(require_admin)
 ):
     vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
     if not vehicle:
@@ -97,6 +100,14 @@ def purchase_vehicle(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Vehicle is out of stock"
         )
+    
+    # Create transaction log
+    transaction = Transaction(
+        user_id=current_user.id,
+        vehicle_id=vehicle.id,
+        purchase_price=vehicle.price
+    )
+    db.add(transaction)
     
     vehicle.quantity -= 1
     db.commit()

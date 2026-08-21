@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.main import app
 from app.database import Base, get_db
+from app.models.transaction import Transaction
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_dealership.db"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
@@ -107,6 +108,29 @@ def test_delete_vehicle_permissions():
     delete_admin_res = client.delete(f"/api/vehicles/{vehicle_id}", headers={"Authorization": f"Bearer {admin_token}"})
     assert delete_admin_res.status_code == 200
 
+def test_purchase_logs_transaction():
+    token = get_auth_token("buyer3", "user")
+    admin_token = get_auth_token("admin_stocker4", "admin")
+    
+    # Admin creates vehicle
+    create_res = client.post(
+        "/api/vehicles",
+        json={"make": "Mazda", "model": "CX-5", "category": "SUV", "price": 29000.0, "quantity": 1},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    vehicle_id = create_res.json()["id"]
+
+    # Customer purchases vehicle
+    purchase_res = client.post(f"/api/vehicles/{vehicle_id}/purchase", headers={"Authorization": f"Bearer {token}"})
+    assert purchase_res.status_code == 200
+
+    # Verify transaction log
+    db = TestingSessionLocal()
+    transaction = db.query(Transaction).filter(Transaction.vehicle_id == vehicle_id).first()
+    assert transaction is not None
+    assert transaction.purchase_price == 29000.0
+    db.close()
+
 def test_purchase_vehicle_decrements_stock():
     token = get_auth_token("buyer1", "user")
     admin_token = get_auth_token("admin_stocker1", "admin")
@@ -169,3 +193,23 @@ def test_restock_vehicle_admin_only():
     )
     assert admin_restock.status_code == 200
     assert admin_restock.json()["quantity"] == 6
+
+def test_create_vehicle_permissions():
+    admin_token = get_auth_token("admin5", "admin")
+    user_token = get_auth_token("regular_user3", "user")
+
+    payload = {
+        "make": "Toyota",
+        "model": "Camry",
+        "category": "Sedan",
+        "price": 26000.0,
+        "quantity": 5
+    }
+
+    # Normal user should be rejected (403 Forbidden)
+    res = client.post("/api/vehicles", json=payload, headers={"Authorization": f"Bearer {user_token}"})
+    assert res.status_code == 403
+
+    # Admin should be allowed (201 Created)
+    res = client.post("/api/vehicles", json=payload, headers={"Authorization": f"Bearer {admin_token}"})
+    assert res.status_code == 201

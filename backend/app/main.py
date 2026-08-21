@@ -4,6 +4,7 @@ from app.database import Base, engine
 from app.api import auth, vehicles
 from app.models.user import User
 from app.models.vehicle import Vehicle
+from app.models.transaction import Transaction
 
 Base.metadata.create_all(bind=engine)
 
