@@ -4,7 +4,7 @@ from typing import List, Optional
 from app.database import get_db
 from app.models.vehicle import Vehicle
 from app.models.user import User
-from app.schemas.vehicle import VehicleCreate, VehicleUpdate, VehicleResponse
+from app.schemas.vehicle import VehicleCreate, VehicleUpdate, VehicleResponse, RestockRequest
 from app.core.dependencies import get_current_user, require_admin
 
 router = APIRouter(prefix="/api/vehicles", tags=["Vehicles"])
@@ -82,3 +82,39 @@ def delete_vehicle(
     db.delete(vehicle)
     db.commit()
     return {"message": "Vehicle deleted successfully"}
+@router.post("/{vehicle_id}/purchase", response_model=VehicleResponse)
+def purchase_vehicle(
+    vehicle_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    if vehicle.quantity <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Vehicle is out of stock"
+        )
+    
+    vehicle.quantity -= 1
+    db.commit()
+    db.refresh(vehicle)
+    return vehicle
+
+@router.post("/{vehicle_id}/restock", response_model=VehicleResponse)
+def restock_vehicle(
+    vehicle_id: int,
+    restock_data: RestockRequest,
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_admin)
+):
+    vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    vehicle.quantity += restock_data.amount
+    db.commit()
+    db.refresh(vehicle)
+    return vehicle

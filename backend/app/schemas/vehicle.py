@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from pydantic import Field
 
 class VehicleCreate(BaseModel):
     make: str
@@ -25,3 +26,6 @@ class VehicleResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class RestockRequest(BaseModel):
+    amount: int = Field(gt=0, description="Amount to add to stock, must be greater than 0")
