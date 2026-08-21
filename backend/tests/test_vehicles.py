@@ -106,3 +106,66 @@ def test_delete_vehicle_permissions():
     # Admin should be allowed (200 OK)
     delete_admin_res = client.delete(f"/api/vehicles/{vehicle_id}", headers={"Authorization": f"Bearer {admin_token}"})
     assert delete_admin_res.status_code == 200
+
+def test_purchase_vehicle_decrements_stock():
+    token = get_auth_token("buyer1", "user")
+    admin_token = get_auth_token("admin_stocker1", "admin")
+    
+    # Admin creates vehicle with quantity = 2
+    create_res = client.post(
+        "/api/vehicles",
+        json={"make": "Mazda", "model": "CX-5", "category": "SUV", "price": 29000.0, "quantity": 2},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    vehicle_id = create_res.json()["id"]
+
+    # Customer purchases vehicle
+    purchase_res = client.post(f"/api/vehicles/{vehicle_id}/purchase", headers={"Authorization": f"Bearer {token}"})
+    assert purchase_res.status_code == 200
+    assert purchase_res.json()["quantity"] == 1
+
+def test_purchase_vehicle_out_of_stock_fails():
+    token = get_auth_token("buyer2", "user")
+    admin_token = get_auth_token("admin_stocker2", "admin")
+
+    # Create vehicle with quantity = 0
+    create_res = client.post(
+        "/api/vehicles",
+        json={"make": "Hyundai", "model": "Elantra", "category": "Sedan", "price": 21000.0, "quantity": 0},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    vehicle_id = create_res.json()["id"]
+
+    # Attempt purchase
+    purchase_res = client.post(f"/api/vehicles/{vehicle_id}/purchase", headers={"Authorization": f"Bearer {token}"})
+    assert purchase_res.status_code == 400
+    assert "out of stock" in purchase_res.json()["detail"].lower()
+
+def test_restock_vehicle_admin_only():
+    admin_token = get_auth_token("admin_stocker3", "admin")
+    user_token = get_auth_token("regular_user2", "user")
+
+    # Create vehicle with quantity = 1
+    create_res = client.post(
+        "/api/vehicles",
+        json={"make": "Subaru", "model": "Outback", "category": "Wagon", "price": 31000.0, "quantity": 1},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    vehicle_id = create_res.json()["id"]
+
+    # Regular user attempting restock must fail (403)
+    user_restock = client.post(
+        f"/api/vehicles/{vehicle_id}/restock",
+        json={"amount": 5},
+        headers={"Authorization": f"Bearer {user_token}"}
+    )
+    assert user_restock.status_code == 403
+
+    # Admin restock succeeds
+    admin_restock = client.post(
+        f"/api/vehicles/{vehicle_id}/restock",
+        json={"amount": 5},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert admin_restock.status_code == 200
+    assert admin_restock.json()["quantity"] == 6
