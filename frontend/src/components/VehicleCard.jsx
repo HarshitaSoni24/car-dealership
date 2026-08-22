@@ -1,14 +1,33 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ShoppingBag, Edit, Trash2, PlusCircle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ShoppingBag, Edit, Trash2, PlusCircle, CheckCircle2, AlertCircle, Heart } from 'lucide-react';
+import { savedVehicleApi } from '../api/client';
 
 export default function VehicleCard({ vehicle, onPurchase, onRestock, onEdit, onDelete }) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, savedVehicles, fetchSavedVehicles } = useAuth();
   const [purchasing, setPurchasing] = useState(false);
   const [restockAmount, setRestockAmount] = useState('');
   const [showRestock, setShowRestock] = useState(false);
 
   const isOutOfStock = vehicle.quantity <= 0;
+  const isSaved = savedVehicles.includes(vehicle.id);
+
+  const handleToggleSave = async () => {
+    if (!user) {
+      alert('Please log in to save vehicles.');
+      return;
+    }
+    try {
+      if (isSaved) {
+        await savedVehicleApi.unsave(vehicle.id);
+      } else {
+        await savedVehicleApi.save(vehicle.id);
+      }
+      await fetchSavedVehicles();
+    } catch (err) {
+      alert('Failed to update saved vehicles.');
+    }
+  };
 
   const handlePurchase = async () => {
     if (!user) {
@@ -31,92 +50,94 @@ export default function VehicleCard({ vehicle, onPurchase, onRestock, onEdit, on
   };
 
   return (
-    <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl overflow-hidden hover:border-slate-600 transition flex flex-col justify-between group">
+    <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden hover:border-slate-200 transition-all duration-300 flex flex-col
+       justify-between group shadow-lg shadow-slate-200/40 hover:shadow-xl hover:shadow-slate-300/40">
       <div className="p-5">
-        {/* Header Badges */}
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-indigo-950 text-indigo-300 border border-indigo-800/50">
-            {vehicle.category}
-          </span>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-slate-50 text-slate-500 border border-slate-100">
+              {vehicle.category}
+            </span>
+            {user && (
+              <button onClick={handleToggleSave} className={`transition-colors ${isSaved ? 'text-rose-500' : 'text-slate-300 hover:text-rose-400'}`}>
+                <Heart className={`w-4 h-4 ${isSaved ? 'fill-rose-500' : ''}`} />
+              </button>
+            )}
+          </div>
           {isOutOfStock ? (
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800/60 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" /> Out of Stock
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-rose-50 text-rose-600 border border-rose-100 flex
+       items-center gap-1">
+              <AlertCircle className="w-3 h-3" /> Sold Out
             </span>
           ) : (
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/60 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> In Stock: {vehicle.quantity}
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-emerald-50 text-emerald-600 border
+       border-emerald-100 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> {vehicle.quantity} In Stock
             </span>
           )}
         </div>
-
-        {/* Title */}
-        <h3 className="text-xl font-bold text-slate-100 group-hover:text-indigo-400 transition">
+        <h3 className="text-xl font-bold text-slate-800 group-hover:text-indigo-500 transition-colors">
           {vehicle.make} {vehicle.model}
         </h3>
-        <p className="text-2xl font-extrabold text-white mt-2">
+        <p className="text-2xl font-black text-slate-900 mt-2">
           ${vehicle.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
         </p>
       </div>
-
-      {/* Actions */}
       <div className="p-5 pt-0 mt-auto">
-        <div className="border-t border-slate-700/50 pt-4 flex flex-col gap-2">
-          {/* Purchase Button */}
+        <div className="border-t border-slate-50 pt-4 flex flex-col gap-2">
           <button
             onClick={handlePurchase}
             disabled={isOutOfStock || purchasing}
-            className={`w-full py-2.5 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2 ${
+            className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
               isOutOfStock
-                ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20'
+                ? 'bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-100'
+                : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-100 active:scale-[0.98]'
             }`}
           >
             <ShoppingBag className="w-4 h-4" />
-            {purchasing ? 'Processing...' : isOutOfStock ? 'Sold Out' : 'Purchase'}
+            {purchasing ? 'Processing...' : isOutOfStock ? 'Currently Unavailable' : 'Purchase Now'}
           </button>
-
-          {/* Admin Controls */}
           {isAdmin && (
             <div className="pt-2 flex items-center gap-2">
               <button
                 onClick={() => setShowRestock(!showRestock)}
                 title="Restock"
-                className="flex-1 py-1.5 px-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1"
+                className="flex-1 py-2 px-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-xs font-bold transition flex items-center
+       justify-center gap-1.5 border border-slate-100"
               >
                 <PlusCircle className="w-3.5 h-3.5" /> Restock
               </button>
               <button
                 onClick={() => onEdit(vehicle)}
                 title="Edit details"
-                className="p-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition"
+                className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-indigo-500 rounded-lg transition border border-slate-100"
               >
                 <Edit className="w-4 h-4" />
               </button>
               <button
                 onClick={() => onDelete(vehicle.id)}
                 title="Delete vehicle"
-                className="p-1.5 bg-slate-700 hover:bg-rose-900/60 text-slate-300 hover:text-rose-300 rounded-lg transition"
+                className="p-2 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-lg transition border border-slate-100"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
           )}
-
-          {/* Restock Popover / Input */}
           {isAdmin && showRestock && (
-            <form onSubmit={handleRestockSubmit} className="flex gap-2 mt-2">
+            <form onSubmit={handleRestockSubmit} className="flex gap-2 mt-2 animate-in fade-in slide-in-from-top-1">
               <input
                 type="number"
                 min="1"
                 placeholder="Qty"
                 value={restockAmount}
                 onChange={(e) => setRestockAmount(e.target.value)}
-                className="w-20 px-2.5 py-1 bg-slate-900 border border-slate-600 rounded-lg text-xs text-white"
+                className="w-20 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 focus:outline-none
+       focus:border-indigo-400"
                 required
               />
               <button
                 type="submit"
-                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium"
+                className="flex-1 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm"
               >
                 Confirm
               </button>

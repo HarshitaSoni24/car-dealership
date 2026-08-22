@@ -38,47 +38,47 @@ export default function VehicleModal({ isOpen, onClose, onSave, vehicleToEdit })
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
-        <button onClick={onClose} className="absolute right-4 top-4 text-slate-400 hover:text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+        <button onClick={onClose} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 transition-colors">
           <X className="w-5 h-5" />
         </button>
 
-        <h2 className="text-xl font-bold text-white mb-4">
+        <h2 className="text-xl font-bold text-slate-900 mb-4">
           {vehicleToEdit ? 'Edit Vehicle Details' : 'Add New Vehicle to Inventory'}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Make</label>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Make</label>
             <input
               type="text"
               required
               placeholder="e.g. Porsche"
               value={formData.make}
               onChange={(e) => setFormData({ ...formData, make: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Model</label>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Model</label>
             <input
               type="text"
               required
               placeholder="e.g. 911 Carrera"
               value={formData.model}
               onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Category</label>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Category</label>
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all"
             >
               <option value="Sedan">Sedan</option>
               <option value="SUV">SUV</option>
@@ -91,7 +91,7 @@ export default function VehicleModal({ isOpen, onClose, onSave, vehicleToEdit })
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Price ($)</label>
+              <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Price ($)</label>
               <input
                 type="number"
                 step="0.01"
@@ -99,11 +99,11 @@ export default function VehicleModal({ isOpen, onClose, onSave, vehicleToEdit })
                 placeholder="29999"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Quantity</label>
+              <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Quantity</label>
               <input
                 type="number"
                 min="0"
@@ -111,14 +111,14 @@ export default function VehicleModal({ isOpen, onClose, onSave, vehicleToEdit })
                 placeholder="5"
                 value={formData.quantity}
                 onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition mt-2 shadow-lg shadow-indigo-600/30"
+            className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl text-sm transition-all mt-2 shadow-lg shadow-indigo-100 active:scale-[0.98]"
           >
             {vehicleToEdit ? 'Save Changes' : 'Add Vehicle'}
           </button>

@@ -30,4 +30,14 @@ export const vehicleApi = {
   restock: (id, amount) => api.post(`/vehicles/${id}/restock`, { amount }),
 };
 
+export const savedVehicleApi = {
+  save: (vehicle_id) => api.post('/saved-vehicles', { vehicle_id }),
+  unsave: (vehicle_id) => api.delete(`/saved-vehicles/${vehicle_id}`),
+  getMyGarage: () => api.get('/saved-vehicles'),
+};
+
+export const transactionApi = {
+  getMyPurchases: () => api.get('/transactions/my-purchases'),
+};
+
 export default api;

@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authApi } from '../api/client';
+import { authApi, savedVehicleApi } from '../api/client';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token') || null);
+  const [savedVehicles, setSavedVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -13,9 +14,19 @@ export const AuthProvider = ({ children }) => {
     const storedUsername = localStorage.getItem('username');
     if (token && storedRole && storedUsername) {
       setUser({ username: storedUsername, role: storedRole });
+      fetchSavedVehicles();
     }
     setLoading(false);
   }, [token]);
+
+  const fetchSavedVehicles = async () => {
+    try {
+      const res = await savedVehicleApi.getMyGarage();
+      setSavedVehicles(res.data.map(item => item.vehicle_id));
+    } catch (err) {
+      console.error('Failed to fetch saved vehicles', err);
+    }
+  };
 
   const login = async (username, password) => {
     const res = await authApi.login({ username, password });
@@ -25,6 +36,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('username', username);
     setToken(access_token);
     setUser({ username, role });
+    await fetchSavedVehicles();
     return res.data;
   };
 
@@ -38,10 +50,21 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('username');
     setToken(null);
     setUser(null);
+    setSavedVehicles([]);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, isAdmin: user?.role === 'admin', loading }}>
+    <AuthContext.Provider value={{ 
+        user, 
+        token, 
+        login, 
+        register, 
+        logout, 
+        isAdmin: user?.role === 'admin', 
+        loading,
+        savedVehicles,
+        fetchSavedVehicles
+    }}>
       {children}
     </AuthContext.Provider>
   );

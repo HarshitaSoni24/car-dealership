@@ -4,6 +4,8 @@ import FilterBar from './components/FilterBar';
 import VehicleCard from './components/VehicleCard';
 import AuthModal from './components/AuthModal';
 import VehicleModal from './components/VehicleModal';
+import LandingPage from './components/LandingPage';
+import MyGarage from './components/MyGarage';
 import { vehicleApi } from './api/client';
 import { Car } from 'lucide-react';
 
@@ -15,6 +17,8 @@ export default function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [vehicleToEdit, setVehicleToEdit] = useState(null);
+
+  const [view, setView] = useState('landing'); // 'landing' | 'showroom' | 'my-garage'
 
   const fetchVehicles = async (activeFilters = filters) => {
     setLoading(true);
@@ -34,8 +38,10 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchVehicles();
-  }, [filters.category]);
+    if (view === 'showroom' || view === 'my-garage') {
+      fetchVehicles();
+    }
+  }, [filters.category, view]);
 
   const handlePurchase = async (id) => {
     try {
@@ -88,51 +94,79 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col">
+    <div className="min-h-screen bg-slate-50/50 flex flex-col">
       <Navbar
         onOpenAuth={() => setIsAuthOpen(true)}
         onOpenAddModal={() => {
           setVehicleToEdit(null);
           setIsVehicleModalOpen(true);
         }}
+        currentView={view}
+        setView={setView}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <FilterBar
-          filters={filters}
-          setFilters={setFilters}
-          onSearch={() => fetchVehicles(filters)}
-          onReset={handleResetFilters}
+      {view === 'landing' ? (
+        <LandingPage
+          onExplore={() => setView('showroom')}
+          onManage={() => setIsAuthOpen(true)}
         />
+      ) : view === 'my-garage' ? (
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-700">
+          <MyGarage
+            vehicles={vehicles}
+            onPurchase={handlePurchase}
+            onRestock={handleRestock}
+            onEdit={(v) => {
+              setVehicleToEdit(v);
+              setIsVehicleModalOpen(true);
+            }}
+            onDelete={handleDelete}
+          />
+        </main>
+      ) : (
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-700">
+          <FilterBar
+            filters={filters}
+            setFilters={setFilters}
+            onSearch={() => fetchVehicles(filters)}
+            onReset={handleResetFilters}
+          />
 
-        {loading ? (
-          <div className="flex justify-center items-center py-20 text-slate-400 text-sm">
-            Loading inventory...
-          </div>
-        ) : vehicles.length === 0 ? (
-          <div className="text-center py-20 bg-slate-800/40 rounded-3xl border border-slate-800">
-            <Car className="w-12 h-12 mx-auto text-slate-600 mb-3" />
-            <h3 className="text-lg font-semibold text-slate-300">No vehicles found</h3>
-            <p className="text-sm text-slate-500 mt-1">Try adjusting your search criteria or add new inventory.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {vehicles.map((vehicle) => (
-              <VehicleCard
-                key={vehicle.id}
-                vehicle={vehicle}
-                onPurchase={handlePurchase}
-                onRestock={handleRestock}
-                onEdit={(v) => {
-                  setVehicleToEdit(v);
-                  setIsVehicleModalOpen(true);
-                }}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
-        )}
-      </main>
+          {loading ? (
+            <div className="flex justify-center items-center py-20 text-slate-400 text-sm font-medium">
+              Loading inventory...
+            </div>
+          ) : vehicles.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
+              <Car className="w-12 h-12 mx-auto text-slate-200 mb-4" />
+              <h3 className="text-xl font-bold text-slate-800">No vehicles found</h3>
+              <p className="text-sm text-slate-500 mt-2 max-w-xs mx-auto">We couldn't find any vehicles matching your current filters. Try adjusting them or clear all.</p>
+              <button
+                onClick={handleResetFilters}
+                className="mt-6 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-bold transition-colors"
+              >
+                Clear all filters
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {vehicles.map((vehicle) => (
+                <VehicleCard
+                  key={vehicle.id}
+                  vehicle={vehicle}
+                  onPurchase={handlePurchase}
+                  onRestock={handleRestock}
+                  onEdit={(v) => {
+                    setVehicleToEdit(v);
+                    setIsVehicleModalOpen(true);
+                  }}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          )}
+        </main>
+      )}
 
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       <VehicleModal
